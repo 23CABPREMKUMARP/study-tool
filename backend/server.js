@@ -14,22 +14,6 @@ app.use(helmet());
 app.use(morgan('dev'));
 
 // Routes
-app.get('/', (req, res) => {
-    res.send('AI Study Tool Backend API is running...');
-});
-
-// Import Routes
-const authRoutes = require('./routes/auth');
-const aiRoutes = require('./routes/ai');
-const quizRoutes = require('./routes/quiz');
-const practiceRoutes = require('./routes/practice');
-
-app.use('/api/auth', authRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/quiz', quizRoutes);
-app.use('/api/practice', practiceRoutes);
-
-// Database Connection
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/study-tool';
 
@@ -46,15 +30,37 @@ const connectDB = async () => {
     }
 };
 
-// Middleware to ensure DB connection for every request in serverless
+// Middleware to ensure DB connection for every request
 app.use(async (req, res, next) => {
     await connectDB();
     next();
 });
 
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+// Routes
+app.get('/api/test', (req, res) => {
+    res.json({ message: 'API System Online', timestamp: new Date().toISOString() });
+});
+
+app.get('/', (req, res) => {
+    res.send('AI Study Tool Backend API is running...');
+});
+
+// Import Routes
+const authRoutes = require('./routes/auth');
+const aiRoutes = require('./routes/ai');
+const quizRoutes = require('./routes/quiz');
+const practiceRoutes = require('./routes/practice');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/quiz', quizRoutes);
+app.use('/api/practice', practiceRoutes);
+
+// For Vercel, we export the app. For local, we listen.
+if (!process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
+        connectDB(); // Connect to DB after starting server
     });
 }
 
