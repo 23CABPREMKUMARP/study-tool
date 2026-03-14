@@ -6,24 +6,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 exports.generateProblem = async (req, res) => {
     const { topic, difficulty, language } = req.body;
 
-    if (!process.env.GEMINI_API_KEY) {
-        return res.status(200).json({
-            title: "In-Place Array Reversal",
-            difficulty: "Easy",
-            category: topic || "Algorithms",
-            description: "Write a function that reverses an array in-place. Do not use built-in reverse functions.",
-            examples: [
-                { input: "[1, 2, 3, 4, 5]", output: "[5, 4, 3, 2, 1]" },
-                { input: "['a', 'b', 'c']", output: "['c', 'b', 'a']" }
-            ],
-            constraints: ["Time complexity must be O(n)", "Space complexity must be O(1)"],
-            hints: ["Use a two-pointer technique.", "Swap elements from both ends toward the middle."],
-            initialCode: language === 'python' ? "def solve(arr):\n    # Write your logic here\n    pass" : "function solve(arr) {\n    // Write your logic here\n    return arr;\n}"
-        });
-    }
-
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         const prompt = `
       As a technical interviewer, generate a coding challenge about ${topic} in ${language} with ${difficulty} difficulty.
@@ -46,30 +30,36 @@ exports.generateProblem = async (req, res) => {
         const text = response.text();
 
         const cleanJson = text.replace(/```json|```/g, '').trim();
-        const data = JSON.parse(cleanJson);
+        let data;
+        try {
+            data = JSON.parse(cleanJson);
+        } catch (parseError) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                data = JSON.parse(jsonMatch[0]);
+            } else {
+                throw parseError;
+            }
+        }
 
         res.json(data);
     } catch (error) {
         console.error('Practice AI Error:', error);
+        if (error.status === 429) {
+            return res.status(429).json({ 
+                message: 'Neural Core Rate Limited. Please wait 60 seconds.',
+                isQuotaError: true
+            });
+        }
         res.status(500).json({ message: 'Failed to generate problem' });
     }
 };
 
 exports.compileAndRun = async (req, res) => {
     const { code, language, problem } = req.body;
-    console.log('--- Coding Arena: Run Request ---');
-    console.log('Language:', language);
-    console.log('Problem:', problem?.title);
-
-    if (!process.env.GEMINI_API_KEY) {
-        return res.status(200).json({
-            output: "✅ Test Case 1: Passed\n✅ Test Case 2: Passed\n\nAll tests passed successfully (Simulated Execution).",
-            status: "success"
-        });
-    }
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         const prompt = `
       Act as a code compiler and test runner.
@@ -94,36 +84,37 @@ exports.compileAndRun = async (req, res) => {
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
-        console.log('AI Raw Output:', text);
 
         const cleanJson = text.replace(/```json|```/g, '').trim();
+        let data;
         try {
-            const data = JSON.parse(cleanJson);
-            res.json(data);
+            data = JSON.parse(cleanJson);
         } catch (parseError) {
-            console.error('JSON Parse Error:', parseError);
-            res.status(500).json({ output: "AI returned malformed output. Please retry.", status: "error" });
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                data = JSON.parse(jsonMatch[0]);
+            } else {
+                throw parseError;
+            }
         }
+        res.json(data);
     } catch (error) {
-        console.error('Execution Error Details:', error);
-        res.status(500).json({ output: "Internal Error during code execution.", status: "error" });
+        console.error('Execution Error:', error);
+        if (error.status === 429) {
+            return res.status(429).json({ 
+                message: 'Neural Core Rate Limited. Please wait 60 seconds.',
+                isQuotaError: true
+            });
+        }
+        res.status(500).json({ message: 'Failed to execute code' });
     }
 };
 
 exports.generateFlashcards = async (req, res) => {
     const { topic, difficulty, count = 4 } = req.body;
 
-    if (!process.env.GEMINI_API_KEY) {
-        return res.status(200).json([
-            { category: topic || "Concepts", difficulty: difficulty || "Beginner", question: "What is Encapsulation?", answer: "Encapsulation is the bundling of data and the methods that operate on that data into a single unit, usually a class, while restricting direct access to some components." },
-            { category: topic || "React", difficulty: difficulty || "Intermediate", question: "What is Virtual DOM?", answer: "The Virtual DOM is a programming concept where an ideal, or 'virtual', representation of a UI is kept in memory and synced with the 'real' DOM by a library such as ReactDOM." },
-            { category: topic || "Distributed Systems", difficulty: difficulty || "Hard", question: "Explain CAP Theorem.", answer: "The CAP theorem states that it is impossible for a distributed data store to simultaneously provide more than two out of the three guarantees: Consistency, Availability, and Partition Tolerance." },
-            { category: topic || "JavaScript", difficulty: difficulty || "Advanced", question: "What is a Closure in JavaScript?", answer: "A closure is the combination of a function bundled together (enclosed) with references to its surrounding state (the lexical environment)." }
-        ].slice(0, count));
-    }
-
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         const prompt = `
       Generate ${count} educational flashcards for: ${topic} with ${difficulty} difficulty.
@@ -142,11 +133,27 @@ exports.generateFlashcards = async (req, res) => {
         const text = response.text();
 
         const cleanJson = text.replace(/```json|```/g, '').trim();
-        const data = JSON.parse(cleanJson);
+        let data;
+        try {
+            data = JSON.parse(cleanJson);
+        } catch (parseError) {
+            const jsonMatch = text.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+                data = JSON.parse(jsonMatch[0]);
+            } else {
+                throw parseError;
+            }
+        }
 
         res.json(data);
     } catch (error) {
         console.error('Flashcards AI Error:', error);
+        if (error.status === 429) {
+            return res.status(429).json({ 
+                message: 'Neural Core Rate Limited. Please wait 60 seconds.',
+                isQuotaError: true
+            });
+        }
         res.status(500).json({ message: 'Failed to generate flashcards' });
     }
 };

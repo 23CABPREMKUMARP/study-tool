@@ -50,7 +50,6 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/ask-ai" element={<AIExplainer />} />
               <Route path="/practice" element={<CodingPractice />} />
               <Route path="/quiz" element={<Quiz />} />
               <Route path="/interview" element={<InterviewSimulator />} />

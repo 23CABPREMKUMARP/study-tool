@@ -59,9 +59,10 @@ const InterviewSimulator = () => {
             }]);
         } catch (error) {
             console.error(error);
+            const serverMessage = error.response?.data?.message;
             setMessages(prev => [...prev, {
                 role: 'ai',
-                content: "Insightful approach. Let's shift gears: How would you design a rate-limiting system for a high-traffic microservices architecture?"
+                content: serverMessage ? `[Neural Alert]: ${serverMessage}` : "Connection to Neural Core timed out. Please verify your sync and retry."
             }]);
         } finally {
             setLoading(false);
@@ -79,16 +80,8 @@ const InterviewSimulator = () => {
             setFeedback(data);
         } catch (error) {
             console.error(error);
-            setFeedback({
-                score: 88,
-                summary: "Exemplary performance. You demonstrated deep technical intuition and effective communication. Your architectural reasoning is exceptionally structured.",
-                improvements: [
-                    "Specify latency trade-offs in distributed systems.",
-                    "Mention specific monitoring tools (Prometheus/Grafana).",
-                    "Strengthen test-driven development focus."
-                ],
-                strengths: ["Architectural Depth", "Fluid Communication", "Problem Synthesis"]
-            });
+            const serverMessage = error.response?.data?.message;
+            alert(serverMessage || "Neural core failed to deconstruct session data. Please retry synchronization.");
         } finally {
             setLoading(false);
         }

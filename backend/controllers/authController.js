@@ -88,17 +88,75 @@ exports.loginUser = async (req, res) => {
 // @route   GET /api/auth/profile
 // @access  Private
 exports.getUserProfile = async (req, res) => {
-    const user = await User.findById(req.user._id);
+    try {
+        // Handle demo mode
+        if (req.user._id === 'demo_user' || req.user._id === '666') {
+            return res.json({
+                _id: req.user._id,
+                name: req.user.name,
+                email: req.user.email,
+                role: req.user.role || 'user',
+                profile: { savedQuestions: [] }
+            });
+        }
 
-    if (user) {
-        res.json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            profile: user.profile,
-        });
-    } else {
-        res.status(404).json({ message: 'User not found' });
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            res.json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                profile: user.profile,
+            });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Get Profile Error:', error);
+        res.status(500).json({ message: 'Profile synchronization failed' });
+    }
+};
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+exports.updateUserProfile = async (req, res) => {
+    try {
+        // Handle demo mode bypass
+        if (req.user._id === 'demo_user' || req.user._id === '666') {
+            return res.json({
+                _id: req.user._id,
+                name: req.body.name || req.user.name,
+                email: req.body.email || req.user.email,
+                role: req.user.role || 'user',
+                token: generateToken(req.user._id),
+            });
+        }
+
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            user.name = req.body.name || user.name;
+            user.email = req.body.email || user.email;
+            if (req.body.password) {
+                user.password = req.body.password;
+            }
+
+            const updatedUser = await user.save();
+
+            res.json({
+                _id: updatedUser._id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                token: generateToken(updatedUser._id),
+            });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Update Profile Error:', error);
+        res.status(500).json({ message: 'Profile update failed' });
     }
 };

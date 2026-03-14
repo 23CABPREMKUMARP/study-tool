@@ -48,7 +48,6 @@ const Navbar = ({ isDarkMode, toggleDarkMode }) => {
                     {/* Desktop Command Center */}
                     <div className="hidden lg:flex items-center gap-8">
                         {user && <NavLink to="/dashboard">Dashboard</NavLink>}
-                        <NavLink to="/ask-ai">Ask AI</NavLink>
                         <NavLink to="/practice">Coding Arena</NavLink>
                         <NavLink to="/quiz">Quizzes</NavLink>
                         <NavLink to="/interview">Mock Interview</NavLink>
@@ -112,7 +111,6 @@ const Navbar = ({ isDarkMode, toggleDarkMode }) => {
                         >
                             <div className="grid grid-cols-1 gap-2 pt-4">
                                 {user && <NavLink to="/dashboard" mobile>Dashboard</NavLink>}
-                                <NavLink to="/ask-ai" mobile>Ask AI</NavLink>
                                 <NavLink to="/practice" mobile>Coding Arena</NavLink>
                                 <NavLink to="/quiz" mobile>Quizzes</NavLink>
                                 <NavLink to="/interview" mobile>Mock Interview</NavLink>

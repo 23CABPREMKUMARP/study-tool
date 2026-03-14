@@ -41,7 +41,6 @@ const DashboardLayout = () => {
 
     const menuItems = [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { to: '/ask-ai', icon: Brain, label: 'Ask AI' },
         { to: '/practice', icon: Code, label: 'Coding Arena' },
         { to: '/quiz', icon: Layers, label: 'Quizzes' },
         { to: '/interview', icon: MessageSquare, label: 'Mock Interview' },

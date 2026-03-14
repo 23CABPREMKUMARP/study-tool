@@ -33,18 +33,29 @@ app.use('/api/practice', practiceRoutes);
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/study-tool';
 
-// Note: I'll use a separate db.js for cleaner connection
+// Note: Improved connection logic for serverless
+let isConnected = false;
 const connectDB = async () => {
+    if (isConnected) return;
     try {
         await mongoose.connect(MONGO_URI);
+        isConnected = true;
         console.log('MongoDB Connected...');
     } catch (err) {
         console.error('Database connection warning (Demo mode):', err.message);
-        console.log('Server starting without database connection...');
     }
 };
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    connectDB();
+// Middleware to ensure DB connection for every request in serverless
+app.use(async (req, res, next) => {
+    await connectDB();
+    next();
 });
+
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
+
+module.exports = app;

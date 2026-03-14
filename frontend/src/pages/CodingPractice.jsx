@@ -59,7 +59,8 @@ const CodingPractice = () => {
             }
         } catch (error) {
             console.error(error);
-            setOutput('Execution Error: Network failure between Arena and Neural Core.\nCheck your connection and retry.');
+            const serverMessage = error.response?.data?.message;
+            setOutput(`Execution Error: ${serverMessage || 'Network failure between Arena and Neural Core.'}\n\nPlease verify your connection or retry in 60 seconds.`);
         } finally {
             setIsRunning(false);
         }

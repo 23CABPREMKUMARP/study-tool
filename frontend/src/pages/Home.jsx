@@ -77,13 +77,7 @@ const Home = () => {
                     <h3 className="text-4xl md:text-5xl font-black tracking-tighter">Engineered for <span className="gradient-text">Elite Intelligence</span></h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-                    <FeatureCard
-                        icon={Brain}
-                        title="Neural Explain"
-                        description="Deep-level deconstruction of complex technical concepts with visual analogies."
-                        delay={0.1}
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                     <FeatureCard
                         icon={Code}
                         title="Training Arena"

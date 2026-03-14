@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     User,
     Settings,
@@ -12,8 +12,13 @@ import {
     ChevronRight,
     Camera,
     Mail,
-    Edit2
+    Edit2,
+    Save,
+    X,
+    Loader2,
+    Target
 } from 'lucide-react';
+import axios from 'axios';
 
 const ProfileTab = ({ icon: Icon, label, active, onClick }) => (
     <button
@@ -38,7 +43,82 @@ const ProfileTab = ({ icon: Icon, label, active, onClick }) => (
 
 const Profile = () => {
     const [activeTab, setActiveTab] = useState('account');
-    const user = JSON.parse(localStorage.getItem('userInfo')) || { name: 'Dev Maverick', email: 'maverick@sector7.dev' };
+    const [isEditing, setIsEditing] = useState(false);
+    const [profileData, setProfileData] = useState(null);
+    const [formData, setFormData] = useState({ name: '', email: '' });
+    const [loading, setLoading] = useState(true);
+    const [updating, setUpdating] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    const fetchProfile = async () => {
+        try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const { data } = await axios.get('/api/auth/profile', {
+                headers: { Authorization: `Bearer ${userInfo?.token}` }
+            });
+            setProfileData(data);
+            setFormData({ name: data.name, email: data.email });
+        } catch (err) {
+            console.error('Failed to fetch profile:', err);
+            setError('System synchronization failed. Retrying neural link...');
+            // Fallback to local if server fails
+            const localUser = JSON.parse(localStorage.getItem('userInfo'));
+            if (localUser) {
+                setProfileData(localUser);
+                setFormData({ name: localUser.name, email: localUser.email });
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        setUpdating(true);
+        setError('');
+        try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const { data } = await axios.put('/api/auth/profile', formData, {
+                headers: { Authorization: `Bearer ${userInfo?.token}` }
+            });
+            
+            // Update local storage too
+            const newUserInfo = { ...userInfo, name: data.name, email: data.email };
+            if (data.token) newUserInfo.token = data.token;
+            localStorage.setItem('userInfo', JSON.stringify(newUserInfo));
+            
+            setProfileData(data);
+            setIsEditing(false);
+            window.location.reload(); // Refresh to update all components using user info
+        } catch (err) {
+            console.error('Update failed:', err);
+            setError(err.response?.data?.message || 'Neural update failed. Security override likely.');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('userInfo');
+        window.location.href = '/login';
+    };
+
+    if (loading) {
+        return (
+            <div className="h-[80vh] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-6">
+                    <Loader2 className="w-12 h-12 text-primary-500 animate-spin" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Syncing Identity Grid...</span>
+                </div>
+            </div>
+        );
+    }
+
+    const user = profileData || JSON.parse(localStorage.getItem('userInfo')) || { name: 'Unknown', email: '---' };
 
     return (
         <div className="max-w-7xl mx-auto pb-24 animate-in fade-in duration-1000">
@@ -69,7 +149,7 @@ const Profile = () => {
 
                             <div className="mt-8 flex justify-center">
                                 <span className="px-5 py-2 bg-primary-500/10 border border-primary-500/20 text-primary-500 text-[9px] font-black uppercase tracking-[0.3em] rounded-xl shadow-inner">
-                                    Neural Tier: Elite
+                                    Neural Tier: {user.role === 'admin' ? 'Architect' : 'Elite'}
                                 </span>
                             </div>
                         </div>
@@ -85,7 +165,7 @@ const Profile = () => {
                         <ProfileTab icon={Shield} label="Security Matrix" active={activeTab === 'security'} onClick={() => setActiveTab('security')} />
 
                         <div className="pt-6 mt-6 border-t border-slate-100 dark:border-white/5">
-                            <button className="w-full flex items-center gap-5 px-8 py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] text-red-500 hover:bg-red-500/5 transition-all group">
+                            <button onClick={handleLogout} className="w-full flex items-center gap-5 px-8 py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] text-red-500 hover:bg-red-500/5 transition-all group">
                                 <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
                                 <span>Terminate Session</span>
                             </button>
@@ -115,23 +195,59 @@ const Profile = () => {
                                             <h3 className="text-3xl font-black tracking-tight mb-2">General Profile</h3>
                                             <p className="text-slate-400 font-medium text-sm">Synchronize your personal identity across the grid.</p>
                                         </div>
-                                        <button className="px-6 py-3 bg-primary-600/10 text-primary-600 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-primary-600 hover:text-white transition-all active:scale-95 shadow-lg shadow-primary-600/5">
-                                            <Edit2 size={16} /> Update Record
-                                        </button>
+                                        {isEditing ? (
+                                            <div className="flex gap-3">
+                                                <button onClick={() => setIsEditing(false)} className="px-6 py-3 bg-slate-50 dark:bg-dark-900 text-slate-500 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-dark-800 transition-all active:scale-95">
+                                                    <X size={16} /> Cancel
+                                                </button>
+                                                <button onClick={handleUpdate} disabled={updating} className="px-6 py-3 bg-primary-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-primary-700 transition-all active:scale-95 shadow-lg shadow-primary-600/20">
+                                                    {updating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} 
+                                                    {updating ? 'Encrypting...' : 'Save Changes'}
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button onClick={() => setIsEditing(true)} className="px-6 py-3 bg-primary-600/10 text-primary-600 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-primary-600 hover:text-white transition-all active:scale-95 shadow-lg shadow-primary-600/5">
+                                                <Edit2 size={16} /> Update Record
+                                            </button>
+                                        )}
                                     </div>
+
+                                    {error && (
+                                        <div className="p-5 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-xs font-bold animate-shake">
+                                            {error}
+                                        </div>
+                                    )}
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                         <div className="space-y-3 group">
                                             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Assigned Name</label>
-                                            <div className="p-5 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-100 dark:border-white/5 font-black text-slate-700 dark:text-slate-200 shadow-inner group-hover:border-primary-500/20 transition-colors">
-                                                {user.name}
-                                            </div>
+                                            {isEditing ? (
+                                                <input 
+                                                    type="text"
+                                                    className="w-full p-5 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-100 dark:border-white/5 font-black text-slate-700 dark:text-slate-200 shadow-inner focus:border-primary-500/40 outline-none transition-all"
+                                                    value={formData.name}
+                                                    onChange={e => setFormData({...formData, name: e.target.value})}
+                                                />
+                                            ) : (
+                                                <div className="p-5 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-100 dark:border-white/5 font-black text-slate-700 dark:text-slate-200 shadow-inner group-hover:border-primary-500/20 transition-colors">
+                                                    {user.name}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="space-y-3 group">
                                             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Neural ID (Email)</label>
-                                            <div className="p-5 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-100 dark:border-white/5 font-black text-slate-700 dark:text-slate-200 shadow-inner group-hover:border-primary-500/20 transition-colors">
-                                                {user.email}
-                                            </div>
+                                            {isEditing ? (
+                                                <input 
+                                                    type="email"
+                                                    className="w-full p-5 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-100 dark:border-white/5 font-black text-slate-700 dark:text-slate-200 shadow-inner focus:border-primary-500/40 outline-none transition-all"
+                                                    value={formData.email}
+                                                    onChange={e => setFormData({...formData, email: e.target.value})}
+                                                />
+                                            ) : (
+                                                <div className="p-5 bg-slate-50 dark:bg-dark-950 rounded-2xl border border-slate-100 dark:border-white/5 font-black text-slate-700 dark:text-slate-200 shadow-inner group-hover:border-primary-500/20 transition-colors">
+                                                    {user.email}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="space-y-3 group md:col-span-2">
                                             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Geographic Node</label>
@@ -169,12 +285,12 @@ const Profile = () => {
                                         <p className="text-slate-400 font-medium text-sm">Critical concepts saved for deep neural integration.</p>
                                     </div>
                                     <div className="grid grid-cols-1 gap-6">
-                                        {[
+                                        {(user.profile?.savedQuestions?.length > 0 ? user.profile.savedQuestions : [
                                             "Atomic State Transitions in Concurrent Systems",
                                             "Bypassing Garbage Collection Thrashing",
                                             "Edge Computing Latency Optimization Patterns",
                                             "Heuristic Analysis of Large Language Models"
-                                        ].map((q, i) => (
+                                        ]).map((q, i) => (
                                             <motion.div
                                                 key={i}
                                                 initial={{ opacity: 0, y: 10 }}
@@ -190,7 +306,7 @@ const Profile = () => {
                                                         <span className="font-black text-slate-700 dark:text-slate-200 text-lg tracking-tight block transition-colors group-hover:text-primary-500">{q}</span>
                                                         <div className="flex items-center gap-3 mt-2">
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-primary-500 bg-primary-500/5 px-3 py-1 rounded-lg">High Importance</span>
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 py-1">Saved 4h ago</span>
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 py-1">Saved Session Data</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -214,9 +330,9 @@ const Profile = () => {
                                     </p>
                                     <button className="mt-10 px-8 py-4 bg-primary-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-primary-600/20 active:scale-95 transition-all">
                                         Request Early Access
-                                    </button>
-                                </div>
-                            )}
+                                            </button>
+                                        </div>
+                                    )}
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -226,3 +342,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

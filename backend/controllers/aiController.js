@@ -5,21 +5,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 exports.explainConcept = async (req, res) => {
     const { question } = req.body;
-
-    if (!process.env.GEMINI_API_KEY) {
-        return res.status(200).json({
-            definition: "API Key not configured. This is a demo mode.",
-            explanation: "To enable real AI, add GEMINI_API_KEY to your backend .env file.",
-            analogy: "Like a car without fuel, it looks good but won't start!",
-            code: "console.log('Connect Gemini API');",
-            tip: "Configuring environment variables is a key skill.",
-            mistakes: "Keeping API keys in source code.",
-            followUp: ["How to get Gemini Key?", "What is .env?"]
-        });
-    }
-
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         const prompt = `
       You are a senior software engineer interview mentor.
@@ -49,30 +36,20 @@ exports.explainConcept = async (req, res) => {
         res.json(data);
     } catch (error) {
         console.error('AI Error:', error);
+        if (error.status === 429) {
+            return res.status(429).json({ 
+                message: 'Neural Core Rate Limited. Please wait 60 seconds and retry.',
+                isQuotaError: true
+            });
+        }
         res.status(500).json({ message: 'AI failed to respond. Check console for details.' });
     }
 };
 
 exports.generateRoadmap = async (req, res) => {
     const { goal } = req.body;
-
-    if (!process.env.GEMINI_API_KEY) {
-        return res.status(200).json({
-            title: `Roadmap to become ${goal} (Demo Mode)`,
-            duration: "4-6 Weeks",
-            milestones: [
-                {
-                    week: "Week 1",
-                    topic: "Demo Milestone",
-                    description: "This is a placeholder because GEMINI_API_KEY is not set.",
-                    items: ["Item 1", "Item 2"]
-                }
-            ]
-        });
-    }
-
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         const prompt = `
       You are a career coach. Generate a detailed learning roadmap for someone who wants to: ${goal}.
@@ -95,29 +72,35 @@ exports.generateRoadmap = async (req, res) => {
         const text = response.text();
 
         const cleanJson = text.replace(/```json|```/g, '').trim();
-        const data = JSON.parse(cleanJson);
+        let data;
+        try {
+            data = JSON.parse(cleanJson);
+        } catch (parseError) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                data = JSON.parse(jsonMatch[0]);
+            } else {
+                throw parseError;
+            }
+        }
 
         res.json(data);
     } catch (error) {
         console.error('Roadmap AI Error:', error);
+        if (error.status === 429) {
+            return res.status(429).json({ 
+                message: 'Neural Core Rate Limited. Please wait 60 seconds.',
+                isQuotaError: true
+            });
+        }
         res.status(500).json({ message: 'Failed to generate roadmap' });
     }
 };
 
 exports.analyzeResume = async (req, res) => {
     const { resumeText } = req.body;
-
-    if (!process.env.GEMINI_API_KEY) {
-        return res.status(200).json({
-            score: 75,
-            detectedSkills: ["Sample Skill"],
-            summary: "Demo analysis result.",
-            sections: []
-        });
-    }
-
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         const prompt = `
       Analyze this resume text and provide career feedback and interview preparation questions.
@@ -142,26 +125,35 @@ exports.analyzeResume = async (req, res) => {
         const text = response.text();
 
         const cleanJson = text.replace(/```json|```/g, '').trim();
-        const data = JSON.parse(cleanJson);
+        let data;
+        try {
+            data = JSON.parse(cleanJson);
+        } catch (parseError) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                data = JSON.parse(jsonMatch[0]);
+            } else {
+                throw parseError;
+            }
+        }
 
         res.json(data);
     } catch (error) {
         console.error('Resume AI Error:', error);
+        if (error.status === 429) {
+            return res.status(429).json({ 
+                message: 'Neural Core Rate Limited. Please wait 60 seconds.',
+                isQuotaError: true
+            });
+        }
         res.status(500).json({ message: 'Failed to analyze resume' });
     }
 };
 
 exports.interview = async (req, res) => {
     const { role, messages } = req.body;
-
-    if (!process.env.GEMINI_API_KEY) {
-        return res.status(200).json({
-            reply: "Insightful approach. Let's shift gears: How would you design a rate-limiting system for a high-traffic microservices architecture?"
-        });
-    }
-
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         let conversationText = messages.map(m => `${m.role === 'ai' ? 'Interviewer' : 'Candidate'}: ${m.content}`).join('\n');
 
@@ -182,33 +174,36 @@ exports.interview = async (req, res) => {
         const text = response.text();
 
         const cleanJson = text.replace(/```json|```/g, '').trim();
-        const data = JSON.parse(cleanJson);
+        let data;
+        try {
+            data = JSON.parse(cleanJson);
+        } catch (parseError) {
+            // Regex attempt if direct parse fails
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                data = JSON.parse(jsonMatch[0]);
+            } else {
+                throw parseError;
+            }
+        }
 
         res.json(data);
     } catch (error) {
         console.error('Interview AI Error:', error);
+        if (error.status === 429) {
+            return res.status(429).json({ 
+                message: 'Neural Core Rate Limited. Please wait 60 seconds.',
+                isQuotaError: true
+            });
+        }
         res.status(500).json({ message: 'Failed to process interview response' });
     }
 };
 
 exports.finalizeInterview = async (req, res) => {
     const { role, messages } = req.body;
-
-    if (!process.env.GEMINI_API_KEY) {
-        return res.status(200).json({
-            score: 88,
-            summary: "Exemplary performance. You demonstrated deep technical intuition and effective communication. Your architectural reasoning is exceptionally structured.",
-            improvements: [
-                "Specify latency trade-offs in distributed systems.",
-                "Mention specific monitoring tools (Prometheus/Grafana).",
-                "Strengthen test-driven development focus."
-            ],
-            strengths: ["Architectural Depth", "Fluid Communication", "Problem Synthesis"]
-        });
-    }
-
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         let conversationText = messages.map(m => `${m.role === 'ai' ? 'Interviewer' : 'Candidate'}: ${m.content}`).join('\n');
 
@@ -232,11 +227,27 @@ exports.finalizeInterview = async (req, res) => {
         const text = response.text();
 
         const cleanJson = text.replace(/```json|```/g, '').trim();
-        const data = JSON.parse(cleanJson);
+        let data;
+        try {
+            data = JSON.parse(cleanJson);
+        } catch (parseError) {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                data = JSON.parse(jsonMatch[0]);
+            } else {
+                throw parseError;
+            }
+        }
 
         res.json(data);
     } catch (error) {
         console.error('Finalize Interview AI Error:', error);
+        if (error.status === 429) {
+            return res.status(429).json({ 
+                message: 'Neural Core Rate Limited. Please wait 60 seconds.',
+                isQuotaError: true
+            });
+        }
         res.status(500).json({ message: 'Failed to finalize interview' });
     }
 };

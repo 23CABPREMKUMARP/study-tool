@@ -32,39 +32,10 @@ const RoadmapGenerator = () => {
                 { headers: { Authorization: `Bearer ${userInfo?.token}` } }
             );
             setRoadmap(data);
-        } catch (err) {
-            console.error(err);
-            // Demo fallback
-            setRoadmap({
-                title: `Mastery Path: ${goal}`,
-                duration: "~42 Days of Deep Study",
-                milestones: [
-                    {
-                        week: "PHASE 01",
-                        topic: "The Core Blueprint",
-                        description: "Establish defensive coding patterns and primary syntax architectures.",
-                        items: ["Architectural Patterns (MVC/Microservices)", "Advanced Data Marshalling", "Concurrency & Parallelism", "Memory Optimization"]
-                    },
-                    {
-                        week: "PHASE 02",
-                        topic: "System Resiliency",
-                        description: "Build logic that withstands high-entropy environments and peak loads.",
-                        items: ["Distributed Consensus (Raft/Paxos)", "Event-Driven Orchestration", "Zero-Trust Security Models", "Rate Limiting & Throttling"]
-                    },
-                    {
-                        week: "PHASE 03",
-                        topic: "Data Sovereignty",
-                        description: "Engineered persistence layers with optimized read/write performance.",
-                        items: ["Schema Sharding Strategies", "Indexing Depth Analysis", "Polyglot Persistence", "ACID vs BASE trade-offs"]
-                    },
-                    {
-                        week: "PHASE 04",
-                        topic: "The Deployment Grid",
-                        description: "Automated scaling and resilient infrastructure orchestration.",
-                        items: ["Blue/Green Deployment Logic", "Observability (Tracing/Metrics)", "Kubernetes Mesh Networking", "Chaos Engineering Basics"]
-                    }
-                ]
-            });
+        } catch (error) {
+            console.error(error);
+            const serverMessage = error.response?.data?.message;
+            alert(serverMessage || "Neural core failed to synthesize roadmap. Please check your connection or retry in 60 seconds.");
         } finally {
             setLoading(false);
         }

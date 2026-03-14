@@ -57,15 +57,16 @@ const AIExplainer = () => {
             setHistory(prev => [...prev, { role: 'ai', content: data }]);
         } catch (err) {
             console.error(err);
+            const serverMessage = err.response?.data?.message;
             // Enhanced fallback for better demo experience
             const fallbackData = {
-                definition: "Neural Sync Failed: Signal latency detected.",
-                explanation: "Your request reached the neural buffer, but the AI core return was interrupted. Ensure your GEMINI_API_KEY is active in the environment manifest.",
-                analogy: "Like a transmission lost in a solar flare—data exists, but the link is broken.",
-                code: "// Connection Error Log\nsystem.log('Check .env for GEMINI_API_KEY');\nif (!apiKey) throw new Error('Neural Core Offline');",
-                tip: "Always verify your environment synchronization before high-stakes deconstruction.",
-                mistakes: "Assuming local buffers cover cloud-based neural nodes.",
-                followUp: ["How to configure API keys?", "Check network status?", "Retry synchronization?"]
+                definition: serverMessage ? "Neural Sync Interrupted" : "Neural Sync Failed: Signal latency detected.",
+                explanation: serverMessage || "Your request reached the neural buffer, but the AI core return was interrupted. Ensure your GEMINI_API_KEY is active in the environment manifest.",
+                analogy: serverMessage ? "The neural link reported a protocol error." : "Like a transmission lost in a solar flare—data exists, but the link is broken.",
+                code: `// System Error Log\n${serverMessage ? `console.error('${serverMessage}');` : 'console.log("Check .env for GEMINI_API_KEY");'}\nif (error) status = "OFFLINE";`,
+                tip: serverMessage?.includes('Rate Limited') ? "The free tier has burst limits. Chill for a minute." : "Always verify your environment synchronization before high-stakes deconstruction.",
+                mistakes: "Assuming infinite throughput on a free-tier neural node.",
+                followUp: ["Why am I rate limited?", "Check API status", "Retry in 60s"]
             };
             setHistory(prev => [...prev, { role: 'ai', content: fallbackData }]);
         } finally {

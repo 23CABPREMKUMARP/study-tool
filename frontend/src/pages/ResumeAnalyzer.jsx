@@ -69,28 +69,8 @@ const ResumeAnalyzer = () => {
             setAnalysis(data);
         } catch (error) {
             console.error(error);
-            // Fallback for demo if API fails
-            setAnalysis({
-                score: 84,
-                detectedSkills: ["React", "Node.js", "MongoDB", "Express", "TypeScript", "AWS"],
-                summary: "Your profile exhibits strong technical alignment with elite engineering standards. We've detected high-confidence signals in distributed systems and modern UI architecture.",
-                sections: [
-                    {
-                        skill: "UI Architecture",
-                        questions: [
-                            { question: "Contrast the reconcilliation logic in React vs. traditional DOM manipulation.", type: "Internal", difficulty: "Medium" },
-                            { question: "How do you mitigate layout thrashing in high-performance data dashboards?", type: "Optimization", difficulty: "Hard" }
-                        ]
-                    },
-                    {
-                        skill: "Backend Orchestration",
-                        questions: [
-                            { question: "Explain the event-loop priority queue for Microtasks vs. Macrotasks.", type: "Runtime", difficulty: "Advanced" },
-                            { question: "Design an idempotent API endpoint for a distributed payment system.", type: "Architecture", difficulty: "Elite" }
-                        ]
-                    }
-                ]
-            });
+            const serverMessage = error.response?.data?.message;
+            alert(serverMessage || "The cognitive audit engine encountered a latency spike. Please re-initiate analysis.");
         } finally {
             setLoading(false);
         }
